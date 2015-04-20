@@ -14,11 +14,11 @@ namespace CoolRanch
 {
     public partial class ConnectForm : Form
     {
-        SessionInfoExchanger SIExchanger;
+        SessionInfoExchanger _broker;
 
-        public ConnectForm(SessionInfoExchanger six)
+        public ConnectForm(SessionInfoExchanger broker)
         {
-            SIExchanger = six;
+            _broker = broker;
             InitializeComponent();
         }
 
@@ -35,9 +35,7 @@ namespace CoolRanch
 
         private void ConnectButton_Click(object sender, EventArgs e)
         {
-            var addresses = Dns.GetHostAddresses(HostnameTextBox.Text);
-            SIExchanger.SendChallengeRequest(
-                new IPEndPoint(Array.Find(addresses, a => a.AddressFamily == AddressFamily.InterNetwork), short.Parse(PortTextBox.Text)));
+            _broker.InitiateConnection(HostnameTextBox.Text, int.Parse(PortTextBox.Text));
         }
     }
 }

@@ -31,53 +31,59 @@ namespace CoolRanch
 
     class ProcessSpy
     {
-        public uint PID;
-        int Handle;
+        public uint ProcessId;
+        readonly int _handle;
 
-        public ProcessSpy(uint PID)
+        public ProcessSpy(uint processId)
         {
-            this.PID = PID;
-            Handle = Kernel32.OpenProcess(0x38, false, PID);
+            this.ProcessId = processId;
+            _handle = Kernel32.OpenProcess(0x38, false, processId);
         }
 
         ~ProcessSpy()
         {
-            Kernel32.CloseHandle(Handle);
+            Kernel32.CloseHandle(_handle);
         }
 
         public byte[] Read(int address, int size)
         {
             var buf = new byte[size];
             int bytesread = 0;
-            Kernel32.ReadProcessMemory(Handle, address, buf, size, ref bytesread);
+            Kernel32.ReadProcessMemory(_handle, address, buf, size, ref bytesread);
             return buf.Take(bytesread).ToArray();
         }
 
         public int Write(int address, byte[] data)
         {
             int byteswritten = 0;
-            Kernel32.WriteProcessMemory(Handle, address, data, data.Length, ref byteswritten);
+            Kernel32.WriteProcessMemory(_handle, address, data, data.Length, ref byteswritten);
             return byteswritten;
         }
 
         public int Alloc(int size)
         {
-            return Kernel32.VirtualAllocEx(Handle, 0, size, 0x3000, 0x40);
+            return Kernel32.VirtualAllocEx(_handle, 0, size, 0x3000, 0x40);
         }
     }
 
     public class ElDorado
     {
         public bool IsRunning = false;
-        ProcessSpy GameProcess;
+        ProcessSpy _gameProcess;
+
+        public event EventHandler ProcessLaunched;
+        public event EventHandler ProcessClosed;
 
         void SpyOnGameProcess(uint pid)
         {
             if (!IsRunning)
             {
-                Console.WriteLine("Detected game process!");
-                GameProcess = new ProcessSpy(pid);
+                Console.WriteLine("Detected game process.");
+                _gameProcess = new ProcessSpy(pid);
                 IsRunning = true;
+
+                if (ProcessLaunched != null)
+                    ProcessLaunched(this, EventArgs.Empty);
             }
         }
 
@@ -117,15 +123,20 @@ namespace CoolRanch
             var name = (string)instance["Name"];
             var pid = (uint)instance["ProcessId"];
 
-            if (name == "eldorado.exe" && GameProcess.PID == pid)
+            if (name == "eldorado.exe" && _gameProcess.ProcessId == pid)
+            {
+                Console.WriteLine("Game process closed.");
                 IsRunning = false;
+                if (ProcessClosed != null)
+                    ProcessClosed(this, EventArgs.Empty);
+            }
         }
 
         public Guid[] GetXnetParams()
         {
             return new Guid[] {
-                new Guid(GameProcess.Read(0x2247b80, 16)),
-                new Guid(GameProcess.Read(0x2247b90, 16))
+                new Guid(_gameProcess.Read(0x2247b80, 16)),
+                new Guid(_gameProcess.Read(0x2247b90, 16))
             };
         }
 
@@ -146,8 +157,8 @@ namespace CoolRanch
             writer.Write((short)peer.Port);
             writer.BaseStream.Flush();
 
-            var address = GameProcess.Alloc(374);
-            GameProcess.Write(address, syslinkData);
+            var address = _gameProcess.Alloc(374);
+            _gameProcess.Write(address, syslinkData);
 
             var syslinkLenPtr = new byte[8];
             writer = new BinaryWriter(new MemoryStream(syslinkLenPtr));
@@ -155,12 +166,12 @@ namespace CoolRanch
             writer.Write(address);
             writer.BaseStream.Flush();
 
-            GameProcess.Write(0x228e6d8, syslinkLenPtr);
+            _gameProcess.Write(0x228e6d8, syslinkLenPtr);
 
             var joinData = new byte[88];
             writer = new BinaryWriter(new MemoryStream(joinData));
             writer.Seek(16, SeekOrigin.Current);
-            writer.Write(UInt64.MaxValue);
+            writer.Write(ulong.MaxValue);
             writer.Write(1);
             writer.Write(rawXnKid);
             writer.Seek(16, SeekOrigin.Current);
@@ -168,7 +179,7 @@ namespace CoolRanch
             writer.Write(1);
             writer.BaseStream.Flush();
 
-            GameProcess.Write(0x2240b98, joinData);
+            _gameProcess.Write(0x2240b98, joinData);
         }
     }
 }

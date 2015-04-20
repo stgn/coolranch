@@ -19,9 +19,9 @@ namespace CoolRanch
         HMAC ChallengeHMAC;
         bool Running;
 
-        public SessionInfoExchanger(ElDorado Game)
+        public SessionInfoExchanger(ElDorado game)
         {
-            this.Game = Game;
+            Game = game;
             Udp = new UdpClient(new IPEndPoint(IPAddress.Any, 11770));
             ChallengeHMAC = new HMACMD5();
             Running = true;
@@ -125,10 +125,17 @@ namespace CoolRanch
                         var xnKid = new Guid(reader.ReadBytes(16));
                         var xnAddr = new Guid(reader.ReadBytes(16));
 
-                        Game.InjectJoin(new IPEndPoint(peer.Address, port), xnKid, xnAddr);
+                        if (Game.IsRunning)
+                            Game.InjectJoin(new IPEndPoint(peer.Address, port), xnKid, xnAddr);
                     }
                     break;
             }
+        }
+
+        public void InitiateConnection(string hostname, int port)
+        {
+            var addresses = Dns.GetHostAddresses(hostname);
+            SendChallengeRequest(new IPEndPoint(Array.Find(addresses, a => a.AddressFamily == AddressFamily.InterNetwork), port));
         }
 
         void SendMessage(IPEndPoint peer, SixpMessageType type, byte[] msg)
