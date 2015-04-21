@@ -124,6 +124,7 @@
             this.ShowIcon = false;
             this.Text = "Session Browser";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.BrowserForm_FormClosing);
+            this.Shown += new System.EventHandler(this.BrowserForm_Shown);
             this.ResumeLayout(false);
 
         }

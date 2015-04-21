@@ -22,7 +22,6 @@ namespace CoolRanch
             _broker = broker;
             _broker.InfoResponseReceived += _broker_InfoResponseReceived;
             InitializeComponent();
-            DownloadList();
         }
 
         void _broker_InfoResponseReceived(object sender, InfoResponseEventArgs e)
@@ -92,6 +91,11 @@ namespace CoolRanch
             this.Hide();
             e.Cancel = true;
         }
+
+        private void BrowserForm_Shown(object sender, EventArgs e)
+        {
+            DownloadList();
+        }
     }
 
     class ServerListItem : ListViewItem
@@ -106,7 +110,7 @@ namespace CoolRanch
             {
                 info.ContainsKey("gametype") ? info["gametype"].ToString() : "<missing>", 
                 info.ContainsKey("map") ? info["map"].ToString() : "<missing>", 
-                "0 / 0"
+                "- / -"
             });
         }
     }
