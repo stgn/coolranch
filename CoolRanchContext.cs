@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using System.Drawing;
 using System.Reflection;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace CoolRanch
 {
@@ -108,7 +105,7 @@ namespace CoolRanch
             _trayIcon = new NotifyIcon()
             {
                 Visible = true,
-                Icon = System.Drawing.SystemIcons.Application,
+                Icon = SystemIcons.Application,
                 ContextMenuStrip = new ContextMenuStrip()
                 {
                     Items = {

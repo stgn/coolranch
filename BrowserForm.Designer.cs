@@ -1,11 +1,14 @@
-﻿namespace CoolRanch
+﻿using System.ComponentModel;
+using System.Windows.Forms;
+
+namespace CoolRanch
 {
     partial class BrowserForm
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -131,13 +134,13 @@
 
         #endregion
 
-        private System.Windows.Forms.ListView ServerList;
-        private System.Windows.Forms.ColumnHeader nameHeader;
-        private System.Windows.Forms.ColumnHeader gametypeHeader;
-        private System.Windows.Forms.ColumnHeader mapHeader;
-        private System.Windows.Forms.ColumnHeader playersHeader;
-        private System.Windows.Forms.Button ConnectButton;
-        private System.Windows.Forms.Button CancelBrowseButton;
-        private System.Windows.Forms.Button RefreshButton;
+        private ListView ServerList;
+        private ColumnHeader nameHeader;
+        private ColumnHeader gametypeHeader;
+        private ColumnHeader mapHeader;
+        private ColumnHeader playersHeader;
+        private Button ConnectButton;
+        private Button CancelBrowseButton;
+        private Button RefreshButton;
     }
 }

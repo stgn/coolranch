@@ -1,11 +1,14 @@
-﻿namespace CoolRanch
+﻿using System.ComponentModel;
+using System.Windows.Forms;
+
+namespace CoolRanch
 {
     partial class ConnectForm
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -145,13 +148,13 @@
 
         #endregion
 
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TextBox HostnameTextBox;
-        private System.Windows.Forms.TextBox PortTextBox;
-        private System.Windows.Forms.Button ConnectButton;
-        private System.Windows.Forms.Button CancelDialogButton;
+        private TableLayoutPanel tableLayoutPanel1;
+        private Label label1;
+        private Label label2;
+        private TextBox HostnameTextBox;
+        private TextBox PortTextBox;
+        private Button ConnectButton;
+        private Button CancelDialogButton;
     }
 }
 
