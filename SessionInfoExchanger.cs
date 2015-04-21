@@ -91,7 +91,8 @@ namespace CoolRanch
 
             while (Announcing)
             {
-                if ((DateTime.Now - _lastAnnounce).TotalSeconds >= 120)
+                if ((DateTime.Now - _lastAnnounce).TotalSeconds >= 120 
+                    && _game.IsHostingOnlineSession())
                 {
                     SendAssociationRequest(_masterServer);
                     _lastAnnounce = DateTime.Now;
@@ -153,7 +154,7 @@ namespace CoolRanch
                     if (!hostChallenge.SequenceEqual(verify))
                         return;
 
-                    SendInfoReponse(peer, clientChallenge);
+                    SendInfoResponse(peer, clientChallenge);
                 }
                     break;
                 case SixpMessageType.InfoResponse:
@@ -279,6 +280,8 @@ namespace CoolRanch
 
         void SendAssociationRequest(IPEndPoint peer)
         {
+            if (!_game.IsRunning || !AllowJoins || !Announcing || !_game.IsHostingOnlineSession()) return;
+
             var hostChallenge = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes());
             var response = hostChallenge.Take(4).ToArray();
             SendMessage(peer, SixpMessageType.AssociationRequest, response);
@@ -295,7 +298,7 @@ namespace CoolRanch
             SendMessage(peer, SixpMessageType.InfoRequest, request);
         }
 
-        void SendInfoReponse(IPEndPoint peer, byte[] clientChallenge)
+        void SendInfoResponse(IPEndPoint peer, byte[] clientChallenge)
         {
             if (!_game.IsRunning || !AllowJoins || !Announcing || !_game.IsHostingOnlineSession()) return;
 
