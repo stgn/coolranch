@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -14,8 +15,11 @@ namespace CoolRanch
         private ConnectForm _connectForm;
 
         private NotifyIcon _trayIcon;
+        private ToolStripMenuItem _connectItem, _browseItem, _allowJoinsItem, _announceItem, _exitItem;
 
-        private ToolStripMenuItem _connectItem, _exitItem;
+        private bool _gameRunning, _allowJoins, _announceSession;
+
+        private Thread _announceThread;
 
         public CoolRanchContext(ElDorado game, SessionInfoExchanger broker)
         {
@@ -23,45 +27,75 @@ namespace CoolRanch
             _broker = broker;
             _connectForm = new ConnectForm(_broker);
 
+            new Thread(_broker.ReceiveLoop).Start();
+
             _game.ProcessLaunched += _game_ProcessLaunched;
             _game.ProcessClosed += _game_ProcessClosed;
             Application.ApplicationExit += new EventHandler(this.OnApplicationExit);
 
             InitializeComponent();
             _trayIcon.Visible = true;
-            UpdateTray(false);
+            UpdateState();
             _game.MonitorProcesses();
         }
 
-        void UpdateTray(bool gameIsRunning)
+        void UpdateState()
         {
             var parent = _trayIcon.ContextMenuStrip;
             if (parent.InvokeRequired)
             {
-                parent.Invoke(new Action<bool>(UpdateTray), new object[] { gameIsRunning });
+                parent.Invoke(new Action(UpdateState));
             }
             else
             {
-                _trayIcon.Text = String.Format("CoolRanch (game {0}running)", gameIsRunning ? "" : "not ");
-                _connectItem.Enabled = gameIsRunning;
-                _connectForm.Visible = gameIsRunning && _connectForm.Visible;
+                _trayIcon.Text = string.Format("CoolRanch (game {0}running)", _gameRunning ? "" : "not ");
+
+                if (_gameRunning)
+                {
+                    _connectItem.Enabled = 
+                        _browseItem.Enabled = 
+                        _allowJoinsItem.Enabled = true;
+                    _allowJoinsItem.Checked = _allowJoins;
+                    _announceItem.Enabled = _allowJoins;
+                    _announceItem.Checked = _announceSession;
+                }
+                else
+                {
+                    _connectItem.Enabled = 
+                        _browseItem.Enabled = 
+                        _allowJoinsItem.Enabled = 
+                        _announceItem.Enabled = false;
+                }
             }
         }
 
         void _game_ProcessLaunched(object sender, EventArgs e)
         {
-            UpdateTray(true);
+            _gameRunning = true;
+            UpdateState();
         }
 
         void _game_ProcessClosed(object sender, EventArgs e)
         {
-            UpdateTray(false);
+            _gameRunning = false;
+            UpdateState();
         }
 
         private void InitializeComponent()
         {
-            _connectItem = new ToolStripMenuItem("Connect");
+            _connectItem = new ToolStripMenuItem("Connect to session");
             _connectItem.Click += connectItem_Click;
+
+            _browseItem = new ToolStripMenuItem("Browse public sessions");
+            _browseItem.Click += _browseItem_Click;
+
+            _allowJoinsItem = new ToolStripMenuItem("Allow join requests");
+            _allowJoinsItem.CheckOnClick = true;
+            _allowJoinsItem.CheckedChanged += _allowJoinsItem_CheckedChanged;
+
+            _announceItem = new ToolStripMenuItem("Announce session");
+            _announceItem.CheckOnClick = true;
+            _announceItem.CheckedChanged += _announceItem_CheckedChanged;
 
             _exitItem = new ToolStripMenuItem("Exit");
             _exitItem.Click += exitItem_Click;
@@ -74,6 +108,10 @@ namespace CoolRanch
                 {
                     Items = {
                         _connectItem,
+                        _browseItem,
+                        new ToolStripSeparator(),
+                        _allowJoinsItem,
+                        _announceItem,
                         new ToolStripSeparator(),
                         _exitItem
                     }
@@ -81,9 +119,39 @@ namespace CoolRanch
             };
         }
 
+        void _browseItem_Click(object sender, EventArgs e)
+        {
+            new BrowserForm(_broker).Show();
+        }
+
         void connectItem_Click(object sender, EventArgs e)
         {
             _connectForm.Show();
+        }
+
+        void _allowJoinsItem_CheckedChanged(object sender, EventArgs e)
+        {
+            _allowJoins = _allowJoinsItem.Checked;
+            _broker.AllowJoins = _allowJoins;
+            UpdateState();
+        }
+
+        void _announceItem_CheckedChanged(object sender, EventArgs e)
+        {
+            _announceSession = _announceItem.Checked;
+            _broker.Announcing = _announceSession;
+            if (_announceSession && (_announceThread == null || !_announceThread.IsAlive))
+            {
+                _announceThread = new Thread(_broker.AnnounceLoop);
+                _broker.Announcing = true;
+                _announceThread.Start();
+            }
+            else if (_announceThread.IsAlive)
+            {
+                _broker.Announcing = false;
+                _announceThread.Abort();
+            }
+            UpdateState();
         }
 
         void exitItem_Click(object sender, EventArgs e)

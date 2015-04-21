@@ -14,7 +14,6 @@ namespace CoolRanch
         {
             var game = new ElDorado();
             var broker = new SessionInfoExchanger(game);
-            new Thread(broker.ReceiveLoop).Start();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

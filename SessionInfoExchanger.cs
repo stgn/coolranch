@@ -8,32 +8,60 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.Security.Cryptography;
+using System.Windows.Forms;
 using MsgPack;
+using MsgPack.Serialization;
 
 namespace CoolRanch
 {
+    public class InfoResponseEventArgs : EventArgs
+    {
+        public IPEndPoint EndPoint;
+        public byte[] Challenge;
+        public Dictionary<string, object> Info;
+
+        public InfoResponseEventArgs(IPEndPoint endpoint, byte[] challenge, Dictionary<string, object> info)
+        {
+            EndPoint = endpoint;
+            Challenge = challenge;
+            Info = info;
+        }
+    }
+
     public class SessionInfoExchanger
     {
-        UdpClient Udp;
-        ElDorado Game;
-        HMAC ChallengeHMAC;
-        bool Running;
+        UdpClient _udp;
+        ElDorado _game;
+        HMAC _challengeHmac;
+
+        private IPEndPoint _masterServer;
+        private IPEndPoint _joinTarget;
+        private Dictionary<IPEndPoint, byte[]> _challengeCache; // oh god what 
+
+        public bool AllowJoins, Announcing;
+
+        public event EventHandler<InfoResponseEventArgs> InfoResponseReceived;
 
         public SessionInfoExchanger(ElDorado game)
         {
-            Game = game;
-            Udp = new UdpClient(new IPEndPoint(IPAddress.Any, 11770));
-            ChallengeHMAC = new HMACMD5();
-            Running = true;
+            _game = game;
+            _udp = new UdpClient(new IPEndPoint(IPAddress.Any, 11770));
+            _udp.Client.IOControl(-1744830452, new byte[] { 0, 0, 0, 0 }, null);
+            _challengeHmac = new HMACMD5();
+
+            _masterServer =
+                new IPEndPoint(Array.Find(Dns.GetHostAddresses("coolranch.ax.lt"),
+                    a => a.AddressFamily == AddressFamily.InterNetwork), 8080);
+            _challengeCache = new Dictionary<IPEndPoint, byte[]>();
         }
 
         public void ReceiveLoop()
         {
             var peer = new IPEndPoint(IPAddress.Any, 0);
 
-            while (Running)
+            while (true)
             {
-                var data = Udp.Receive(ref peer);
+                var data = _udp.Receive(ref peer);
                 Console.WriteLine("{0} -> {1}", peer, BitConverter.ToString(data));
 
                 var reader = new BinaryReader(new MemoryStream(data));
@@ -58,10 +86,15 @@ namespace CoolRanch
 
         public void AnnounceLoop()
         {
-            while (true)
+            Console.WriteLine("Announcement loop started.");
+
+            while (Announcing)
             {
+                SendAssociationRequest(_masterServer);
                 Thread.Sleep(120000);
             }
+
+            Console.WriteLine("Announcement loop stopped.");
         }
 
         enum SixpMessageType : byte
@@ -84,58 +117,119 @@ namespace CoolRanch
             switch (type)
             {
                 case SixpMessageType.ChallengeRequest:
-                    {
-                        var clientChallenge = reader.ReadBytes(4);
-                        SendChallengeResponse(peer, clientChallenge);
-                    }
+                {
+                    var clientChallenge = reader.ReadBytes(4);
+                    SendChallengeResponse(peer, clientChallenge);
+                }
                     break;
                 case SixpMessageType.ChallengeResponse:
-                    {
-                        // TODO: not do this
-                        var clientChallenge = reader.ReadBytes(4);
-                        var hostChallenge = reader.ReadBytes(4);
+                {
+                    var clientChallenge = reader.ReadBytes(4);
+                    var hostChallenge = reader.ReadBytes(4);
 
-                        var verify = ChallengeHMAC.ComputeHash(peer.Address.GetAddressBytes()).Take(4);
-                        if (!clientChallenge.SequenceEqual(verify))
-                            return;
+                    var verify = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes()).Take(4);
+                    if (!clientChallenge.SequenceEqual(verify))
+                        return;
 
+                    _challengeCache[peer] = hostChallenge;
+
+                    if (Equals(peer, _joinTarget))
                         SendJoinRequest(peer, hostChallenge);
-                    }
+                    else
+                        SendInfoRequest(peer, hostChallenge);
+                }
+                    break;
+                case SixpMessageType.InfoRequest:
+                {
+                    var hostChallenge = reader.ReadBytes(4);
+                    var clientChallenge = reader.ReadBytes(4);
+
+                    var verify = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes()).Take(4);
+                    if (!hostChallenge.SequenceEqual(verify))
+                        return;
+
+                    if (Announcing)
+                        SendInfoReponse(peer, clientChallenge);
+                }
+                    break;
+                case SixpMessageType.InfoResponse:
+                {
+                    var clientChallenge = reader.ReadBytes(4);
+                    var verify = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes()).Take(4);
+                    if (!clientChallenge.SequenceEqual(verify))
+                        return;
+
+                    var serializer = MessagePackSerializer.Get<Dictionary<string, object>>();
+                    var info = serializer.Unpack(ms);
+                    if (InfoResponseReceived != null)
+                        InfoResponseReceived(this, new InfoResponseEventArgs(peer, _challengeCache[peer], info));
+                    _challengeCache.Remove(peer);
+                }
                     break;
                 case SixpMessageType.JoinRequest:
-                    {
-                        var hostChallenge = reader.ReadBytes(4);
-                        var clientChallenge = reader.ReadBytes(4);
+                {
+                    var hostChallenge = reader.ReadBytes(4);
+                    var clientChallenge = reader.ReadBytes(4);
 
-                        var verify = ChallengeHMAC.ComputeHash(peer.Address.GetAddressBytes()).Take(4);
-                        if (!hostChallenge.SequenceEqual(verify))
-                            return;
+                    var verify = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes()).Take(4);
+                    if (!hostChallenge.SequenceEqual(verify))
+                        return;
 
+                    if (_game.IsRunning && _game.IsHostingOnlineSession())
                         SendJoinResponse(peer, clientChallenge);
-                    }
+                }
                     break;
                 case SixpMessageType.JoinResponse:
-                    {
-                        var clientChallenge = reader.ReadBytes(4);
-                        var verify = ChallengeHMAC.ComputeHash(peer.Address.GetAddressBytes()).Take(4);
-                        if (!clientChallenge.SequenceEqual(verify))
-                            return;
+                {
+                    var clientChallenge = reader.ReadBytes(4);
+                    var verify = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes()).Take(4);
+                    if (!clientChallenge.SequenceEqual(verify))
+                        return;
 
-                        var port = reader.ReadUInt16();
-                        var xnKid = new Guid(reader.ReadBytes(16));
-                        var xnAddr = new Guid(reader.ReadBytes(16));
+                    var port = reader.ReadUInt16();
+                    var xnKid = new Guid(reader.ReadBytes(16));
+                    var xnAddr = new Guid(reader.ReadBytes(16));
 
-                        if (Game.IsRunning)
-                            Game.InjectJoin(new IPEndPoint(peer.Address, port), xnKid, xnAddr);
-                    }
+                    if (_game.IsRunning && peer.Equals(_joinTarget))
+                        _game.InjectJoin(new IPEndPoint(peer.Address, port), xnKid, xnAddr);
+                    _joinTarget = null;
+                }
                     break;
             }
         }
 
-        public void InitiateConnection(string hostname, int port)
+        public void ConnectFromScratch(string hostname, int port)
         {
-            var addresses = Dns.GetHostAddresses(hostname);
-            SendChallengeRequest(new IPEndPoint(Array.Find(addresses, a => a.AddressFamily == AddressFamily.InterNetwork), port));
+            IPAddress[] addresses;
+
+            try
+            {
+                addresses = Dns.GetHostAddresses(hostname);
+            }
+            catch (Exception)
+            {
+                addresses = new IPAddress[]{};
+            }
+
+            if (addresses.Length == 0)
+            {
+                MessageBox.Show("Hostname not found, or IP address is invalid.", null, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _joinTarget = new IPEndPoint(Array.Find(addresses, a => a.AddressFamily == AddressFamily.InterNetwork), port);
+            SendChallengeRequest(_joinTarget);
+        }
+
+        public void ConnectWithChallenge(IPEndPoint peer, byte[] hostChallenge)
+        {
+            _joinTarget = peer;
+            SendJoinRequest(_joinTarget, hostChallenge);
+        }
+
+        public void ChallengeForInfo(IPEndPoint peer)
+        {
+            SendChallengeRequest(peer);
         }
 
         void SendMessage(IPEndPoint peer, SixpMessageType type, byte[] msg)
@@ -157,13 +251,13 @@ namespace CoolRanch
                 Array.Copy(header, packet, header.Length);
                 Array.Copy(data, 0, packet, header.Length, data.Length);
                 Console.WriteLine("{0} <- {1}", peer, BitConverter.ToString(packet));
-                Udp.Send(packet, packet.Length, peer);
+                _udp.Send(packet, packet.Length, peer);
             }
         }
 
-        public void SendChallengeRequest(IPEndPoint peer)
+        void SendChallengeRequest(IPEndPoint peer)
         {
-            var clientChallenge = ChallengeHMAC.ComputeHash(peer.Address.GetAddressBytes());
+            var clientChallenge = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes());
 
             var request = new byte[4];
             Array.Copy(clientChallenge, request, 4);
@@ -172,7 +266,7 @@ namespace CoolRanch
 
         void SendChallengeResponse(IPEndPoint peer, byte[] clientChallenge)
         {
-            var hostChallenge = ChallengeHMAC.ComputeHash(peer.Address.GetAddressBytes());
+            var hostChallenge = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes());
 
             var response = new byte[8];
             Array.Copy(clientChallenge, response, 4);
@@ -180,9 +274,42 @@ namespace CoolRanch
             SendMessage(peer, SixpMessageType.ChallengeResponse, response);
         }
 
+        void SendAssociationRequest(IPEndPoint peer)
+        {
+            var hostChallenge = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes());
+            var response = hostChallenge.Take(4).ToArray();
+            SendMessage(peer, SixpMessageType.AssociationRequest, response);
+        }
+
+        void SendInfoRequest(IPEndPoint peer, byte[] hostChallenge)
+        {
+            var clientChallenge = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes());
+
+            var request = new byte[8];
+            Array.Copy(hostChallenge, request, 4);
+            Array.Copy(clientChallenge, 0, request, 4, 4);
+
+            SendMessage(peer, SixpMessageType.InfoRequest, request);
+        }
+
+        void SendInfoReponse(IPEndPoint peer, byte[] clientChallenge)
+        {
+            if (!_game.IsRunning || !AllowJoins || !_game.IsHostingOnlineSession()) return;
+
+            var serializer = MessagePackSerializer.Get<Dictionary<string, object>>();
+            var info = _game.GetGameInfo();
+
+            var ms = new MemoryStream();
+            var writer = new BinaryWriter(ms);
+            writer.Write(clientChallenge);
+            serializer.Pack(ms, info);
+
+            SendMessage(peer, SixpMessageType.InfoResponse, ms.ToArray());
+        }
+
         void SendJoinRequest(IPEndPoint peer, byte[] hostChallenge)
         {
-            var clientChallenge = ChallengeHMAC.ComputeHash(peer.Address.GetAddressBytes());
+            var clientChallenge = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes());
 
             var request = new byte[8];
             Array.Copy(hostChallenge, request, 4);
@@ -193,19 +320,18 @@ namespace CoolRanch
 
         void SendJoinResponse(IPEndPoint peer, byte[] clientChallenge)
         {
-            if (Game.IsRunning)
-            {
-                var guids = Game.GetXnetParams();
+            if (!_game.IsRunning || !AllowJoins) return;
 
-                var ms = new MemoryStream();
-                var writer = new BinaryWriter(ms);
-                writer.Write(clientChallenge);
-                writer.Write((ushort)11774);
-                writer.Write(guids[0].ToByteArray());
-                writer.Write(guids[1].ToByteArray());
+            var guids = _game.GetXnetParams();
 
-                SendMessage(peer, SixpMessageType.JoinResponse, ms.ToArray());
-            }
+            var ms = new MemoryStream();
+            var writer = new BinaryWriter(ms);
+            writer.Write(clientChallenge);
+            writer.Write((ushort)11774);
+            writer.Write(guids[0].ToByteArray());
+            writer.Write(guids[1].ToByteArray());
+
+            SendMessage(peer, SixpMessageType.JoinResponse, ms.ToArray());
         }
     }
 }

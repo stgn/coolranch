@@ -132,6 +132,11 @@ namespace CoolRanch
             }
         }
 
+        public bool IsHostingOnlineSession()
+        {
+            return BitConverter.ToUInt32(_gameProcess.Read(0x01A29D38, 4), 0) == 1;
+        }
+
         public Guid[] GetXnetParams()
         {
             return new Guid[] {
@@ -139,6 +144,16 @@ namespace CoolRanch
                 new Guid(_gameProcess.Read(0x2247b90, 16))
             };
         }
+
+        public Dictionary<string, object> GetGameInfo()
+        {
+            return new Dictionary<string, object>()
+            {
+                {"name", Encoding.Unicode.GetString(_gameProcess.Read(0x01863B20, 32)).Replace("\0","")},
+                {"map", Encoding.Unicode.GetString(_gameProcess.Read(0x01863ACA, 32)).Replace("\0","")},
+                {"gametype", Encoding.Unicode.GetString(_gameProcess.Read(0x01863A9C, 32)).Replace("\0","")}
+            };
+        } 
 
         public void InjectJoin(IPEndPoint peer, Guid xnKid, Guid xnAddr)
         {

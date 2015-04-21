@@ -35,7 +35,7 @@ namespace CoolRanch
 
         private void ConnectButton_Click(object sender, EventArgs e)
         {
-            _broker.InitiateConnection(HostnameTextBox.Text, int.Parse(PortTextBox.Text));
+            _broker.ConnectFromScratch(HostnameTextBox.Text, int.Parse(PortTextBox.Text));
         }
     }
 }
