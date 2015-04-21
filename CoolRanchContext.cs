@@ -163,7 +163,6 @@ namespace CoolRanch
             else if (_announceThread.IsAlive)
             {
                 _broker.Announcing = false;
-                _announceThread.Abort();
             }
             UpdateState();
         }

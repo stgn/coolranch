@@ -39,6 +39,7 @@ namespace CoolRanch
         private Dictionary<IPEndPoint, byte[]> _challengeCache; // oh god what 
 
         public bool AllowJoins, Announcing;
+        private DateTime _lastAnnounce;
 
         public event EventHandler<InfoResponseEventArgs> InfoResponseReceived;
 
@@ -90,8 +91,12 @@ namespace CoolRanch
 
             while (Announcing)
             {
-                SendAssociationRequest(_masterServer);
-                Thread.Sleep(120000);
+                if ((DateTime.Now - _lastAnnounce).TotalSeconds >= 120)
+                {
+                    SendAssociationRequest(_masterServer);
+                    _lastAnnounce = DateTime.Now;
+                }
+                Thread.Sleep(1000);
             }
 
             Console.WriteLine("Announcement loop stopped.");
@@ -148,8 +153,7 @@ namespace CoolRanch
                     if (!hostChallenge.SequenceEqual(verify))
                         return;
 
-                    if (Announcing)
-                        SendInfoReponse(peer, clientChallenge);
+                    SendInfoReponse(peer, clientChallenge);
                 }
                     break;
                 case SixpMessageType.InfoResponse:
@@ -293,7 +297,7 @@ namespace CoolRanch
 
         void SendInfoReponse(IPEndPoint peer, byte[] clientChallenge)
         {
-            if (!_game.IsRunning || !AllowJoins || !_game.IsHostingOnlineSession()) return;
+            if (!_game.IsRunning || !AllowJoins || !Announcing || !_game.IsHostingOnlineSession()) return;
 
             var serializer = MessagePackSerializer.Get<Dictionary<string, object>>();
             var info = _game.GetGameInfo();
