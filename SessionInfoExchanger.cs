@@ -319,7 +319,7 @@ namespace CoolRanch
 
         void SendJoinResponse(IPEndPoint peer, byte[] clientChallenge)
         {
-            if (!_game.IsRunning || !AllowJoins) return;
+            if (!_game.IsRunning || !AllowJoins || !_game.IsHostingOnlineSession()) return;
 
             var guids = _game.GetXnetParams();
 

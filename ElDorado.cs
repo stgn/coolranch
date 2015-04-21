@@ -134,7 +134,10 @@ namespace CoolRanch
 
         public bool IsHostingOnlineSession()
         {
-            return BitConverter.ToUInt32(_gameProcess.Read(0x01A29D38, 4), 0) == 1;
+            for(var i = 0; i < 4; i++)
+                if (BitConverter.ToInt32(_gameProcess.Read(0x1a29d38 + i*8, 4), 0) == 1)
+                    return true;
+            return false;
         }
 
         public Guid[] GetXnetParams()
