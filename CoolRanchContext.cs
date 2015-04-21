@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Reflection;
 
 namespace CoolRanch
 {
@@ -119,6 +120,15 @@ namespace CoolRanch
                         new ToolStripSeparator(),
                         _exitItem
                     }
+                }
+            };
+
+            _trayIcon.MouseUp += (sender, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    var mi = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
+                    mi.Invoke(_trayIcon, null);
                 }
             };
         }
