@@ -175,8 +175,7 @@ namespace CoolRanch
                     if (!hostChallenge.SequenceEqual(verify))
                         return;
 
-                    if (_game.IsRunning && _game.IsHostingOnlineSession())
-                        SendJoinResponse(peer, clientChallenge);
+                    SendJoinResponse(peer, clientChallenge);
                 }
                     break;
                 case SixpMessageType.JoinResponse:
