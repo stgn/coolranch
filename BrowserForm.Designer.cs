@@ -97,6 +97,7 @@
             this.CancelBrowseButton.TabIndex = 2;
             this.CancelBrowseButton.Text = "Cancel";
             this.CancelBrowseButton.UseVisualStyleBackColor = true;
+            this.CancelBrowseButton.Click += new System.EventHandler(this.CancelBrowseButton_Click);
             // 
             // RefreshButton
             // 
@@ -122,6 +123,7 @@
             this.Name = "BrowserForm";
             this.ShowIcon = false;
             this.Text = "Session Browser";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.BrowserForm_FormClosing);
             this.ResumeLayout(false);
 
         }

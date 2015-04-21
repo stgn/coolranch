@@ -12,7 +12,9 @@ namespace CoolRanch
     {
         private ElDorado _game;
         private SessionInfoExchanger _broker;
+
         private ConnectForm _connectForm;
+        private BrowserForm _browserForm;
 
         private NotifyIcon _trayIcon;
         private ToolStripMenuItem _connectItem, _browseItem, _allowJoinsItem, _announceItem, _exitItem;
@@ -25,7 +27,9 @@ namespace CoolRanch
         {
             _game = game;
             _broker = broker;
+
             _connectForm = new ConnectForm(_broker);
+            _browserForm = new BrowserForm(_broker);
 
             new Thread(_broker.ReceiveLoop).Start();
 
@@ -121,7 +125,7 @@ namespace CoolRanch
 
         void _browseItem_Click(object sender, EventArgs e)
         {
-            new BrowserForm(_broker).Show();
+            _browserForm.Show();
         }
 
         void connectItem_Click(object sender, EventArgs e)

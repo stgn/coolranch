@@ -75,8 +75,22 @@ namespace CoolRanch
 
         void ConnectToSelected(object sender, EventArgs e)
         {
+            if (ServerList.SelectedItems.Count == 0)
+                return;
+
             var selected = ServerList.SelectedItems[0] as ServerListItem;
             _broker.ConnectWithChallenge(selected.EndPoint, selected.Challenge);
+        }
+
+        private void CancelBrowseButton_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+        }
+
+        private void BrowserForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.Hide();
+            e.Cancel = true;
         }
     }
 
