@@ -33,10 +33,12 @@ namespace CoolRanch
 
             _game.ProcessLaunched += _game_ProcessLaunched;
             _game.ProcessClosed += _game_ProcessClosed;
-            Application.ApplicationExit += new EventHandler(this.OnApplicationExit);
+            Application.ApplicationExit += OnApplicationExit;
 
             InitializeComponent();
             _trayIcon.Visible = true;
+            _trayIcon.ShowBalloonTip(5000, "CoolRanch", 
+                "To begin, please launch Halo Online.", ToolTipIcon.Info);
             UpdateState();
             _game.MonitorProcesses();
         }
@@ -67,12 +69,17 @@ namespace CoolRanch
                         _browseItem.Enabled = 
                         _allowJoinsItem.Enabled = 
                         _announceItem.Enabled = false;
+                    
+                    _connectForm.Hide();
+                    _browserForm.Hide();
                 }
             }
         }
 
         void _game_ProcessLaunched(object sender, EventArgs e)
         {
+            _trayIcon.ShowBalloonTip(5000, "Halo Online launched", 
+                "Click the CoolRanch tray icon to connect to an Internet lobby or host your own.", ToolTipIcon.Info);
             _gameRunning = true;
             UpdateState();
         }
@@ -91,12 +98,10 @@ namespace CoolRanch
             _browseItem = new ToolStripMenuItem("Browse public sessions");
             _browseItem.Click += _browseItem_Click;
 
-            _allowJoinsItem = new ToolStripMenuItem("Allow join requests");
-            _allowJoinsItem.CheckOnClick = true;
+            _allowJoinsItem = new ToolStripMenuItem("Allow join requests") { CheckOnClick = true };
             _allowJoinsItem.CheckedChanged += _allowJoinsItem_CheckedChanged;
 
-            _announceItem = new ToolStripMenuItem("Announce session");
-            _announceItem.CheckOnClick = true;
+            _announceItem = new ToolStripMenuItem("Announce session") { CheckOnClick = true };
             _announceItem.CheckedChanged += _announceItem_CheckedChanged;
 
             _exitItem = new ToolStripMenuItem("Exit");
@@ -105,8 +110,8 @@ namespace CoolRanch
             _trayIcon = new NotifyIcon()
             {
                 Visible = true,
-                Icon = SystemIcons.Application,
-                ContextMenuStrip = new ContextMenuStrip()
+                Icon = new Icon(Properties.Resources.Icon, SystemInformation.SmallIconSize),
+                ContextMenuStrip = new ContextMenuStrip
                 {
                     Items = {
                         _connectItem,
