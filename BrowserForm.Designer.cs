@@ -39,6 +39,7 @@ namespace CoolRanch
             this.ConnectButton = new System.Windows.Forms.Button();
             this.CancelBrowseButton = new System.Windows.Forms.Button();
             this.RefreshButton = new System.Windows.Forms.Button();
+            this.statusLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // ServerList
@@ -113,22 +114,35 @@ namespace CoolRanch
             this.RefreshButton.UseVisualStyleBackColor = true;
             this.RefreshButton.Click += new System.EventHandler(this.RefreshButton_Click);
             // 
+            // statusLabel
+            // 
+            this.statusLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.statusLabel.AutoSize = true;
+            this.statusLabel.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.statusLabel.Location = new System.Drawing.Point(93, 291);
+            this.statusLabel.Name = "statusLabel";
+            this.statusLabel.Size = new System.Drawing.Size(41, 13);
+            this.statusLabel.TabIndex = 4;
+            this.statusLabel.Text = "(status)";
+            // 
             // BrowserForm
             // 
             this.AcceptButton = this.ConnectButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(624, 321);
+            this.Controls.Add(this.statusLabel);
             this.Controls.Add(this.RefreshButton);
             this.Controls.Add(this.CancelBrowseButton);
             this.Controls.Add(this.ConnectButton);
             this.Controls.Add(this.ServerList);
+            this.Icon = global::CoolRanch.Properties.Resources.Icon;
             this.Name = "BrowserForm";
-            this.ShowIcon = false;
             this.Text = "Session Browser";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.BrowserForm_FormClosing);
             this.Shown += new System.EventHandler(this.BrowserForm_Shown);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -142,5 +156,6 @@ namespace CoolRanch
         private Button ConnectButton;
         private Button CancelBrowseButton;
         private Button RefreshButton;
+        private Label statusLabel;
     }
 }

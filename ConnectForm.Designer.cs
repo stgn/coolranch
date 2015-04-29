@@ -132,11 +132,11 @@ namespace CoolRanch
             this.Controls.Add(this.CancelDialogButton);
             this.Controls.Add(this.ConnectButton);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.Icon = global::CoolRanch.Properties.Resources.Icon;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "ConnectForm";
             this.Padding = new System.Windows.Forms.Padding(6);
-            this.ShowIcon = false;
             this.Text = "Connect to a lobby";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ConnectForm_FormClosing);
             this.tableLayoutPanel1.ResumeLayout(false);

@@ -38,18 +38,30 @@ namespace CoolRanch
         void DownloadList()
         {
             ServerList.Items.Clear();
+            statusLabel.Text = "Downloading lobby list from master server...";
 
             var listdata = new WebClient().DownloadData("http://coolranch.ax.lt:8080/");
+            var numServers = listdata.Length/6;
 
-            var ms = new MemoryStream(listdata);
-            var reader = new BinaryReader(ms);
-
-            var servers = new List<IPEndPoint>();
-            while (ms.Position != ms.Length)
+            if (numServers > 0)
             {
-                servers.Add(new IPEndPoint(new IPAddress(reader.ReadBytes(4)), reader.ReadUInt16()));
+                statusLabel.Text = string.Format("Got {0} {1} from master server.", numServers,
+                    numServers == 1 ? "lobby" : "lobbies");
+
+                var ms = new MemoryStream(listdata);
+                var reader = new BinaryReader(ms);
+
+                var servers = new List<IPEndPoint>();
+                while (ms.Position != ms.Length)
+                {
+                    servers.Add(new IPEndPoint(new IPAddress(reader.ReadBytes(4)), reader.ReadUInt16()));
+                }
+                new Thread(() => InterrogateGently(servers)).Start();
             }
-            new Thread(() => InterrogateGently(servers)).Start();
+            else
+            {
+                statusLabel.Text = "Master server lobby list is empty. Sorry.";
+            }
         }
 
         void InterrogateGently(List<IPEndPoint> servers)
