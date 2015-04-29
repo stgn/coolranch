@@ -171,6 +171,8 @@ namespace CoolRanch
 
         void exitItem_Click(object sender, EventArgs e)
         {
+            _connectForm.Dispose();
+            _browserForm.Dispose();
             Application.Exit();
         }
 
