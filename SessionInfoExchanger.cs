@@ -164,7 +164,7 @@ namespace CoolRanch
 
                     var serializer = MessagePackSerializer.Get<Dictionary<string, object>>();
                     var info = serializer.Unpack(ms);
-                    if (InfoResponseReceived != null)
+                    if (InfoResponseReceived != null && _challengeCache.ContainsKey(peer))
                         InfoResponseReceived(this, new InfoResponseEventArgs(peer, _challengeCache[peer], info));
                     _challengeCache.Remove(peer);
                 }
