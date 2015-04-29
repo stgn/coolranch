@@ -8,7 +8,6 @@ namespace CoolRanch
 {
     class CoolRanchContext : ApplicationContext
     {
-        private ElDorado _game;
         private SessionInfoExchanger _broker;
 
         private ConnectForm _connectForm;
@@ -23,7 +22,6 @@ namespace CoolRanch
 
         public CoolRanchContext(ElDorado game, SessionInfoExchanger broker)
         {
-            _game = game;
             _broker = broker;
 
             _connectForm = new ConnectForm(_broker);
@@ -31,8 +29,8 @@ namespace CoolRanch
 
             new Thread(_broker.ReceiveLoop).Start();
 
-            _game.ProcessLaunched += _game_ProcessLaunched;
-            _game.ProcessClosed += _game_ProcessClosed;
+            game.ProcessLaunched += _game_ProcessLaunched;
+            game.ProcessClosed += _game_ProcessClosed;
             Application.ApplicationExit += OnApplicationExit;
 
             InitializeComponent();
@@ -40,7 +38,7 @@ namespace CoolRanch
             _trayIcon.ShowBalloonTip(5000, "CoolRanch", 
                 "To begin, please launch Halo Online.", ToolTipIcon.Info);
             UpdateState();
-            _game.MonitorProcesses();
+            game.MonitorProcesses();
         }
 
         void UpdateState()
@@ -92,22 +90,22 @@ namespace CoolRanch
 
         private void InitializeComponent()
         {
-            _connectItem = new ToolStripMenuItem("Connect to session");
+            _connectItem = new ToolStripMenuItem("Connect to lobby");
             _connectItem.Click += connectItem_Click;
 
-            _browseItem = new ToolStripMenuItem("Browse public sessions");
+            _browseItem = new ToolStripMenuItem("Browse public lobbies");
             _browseItem.Click += _browseItem_Click;
 
-            _allowJoinsItem = new ToolStripMenuItem("Allow join requests") { CheckOnClick = true };
+            _allowJoinsItem = new ToolStripMenuItem("Host lobby") { CheckOnClick = true };
             _allowJoinsItem.CheckedChanged += _allowJoinsItem_CheckedChanged;
 
-            _announceItem = new ToolStripMenuItem("Announce session") { CheckOnClick = true };
+            _announceItem = new ToolStripMenuItem("Make lobby public") { CheckOnClick = true };
             _announceItem.CheckedChanged += _announceItem_CheckedChanged;
 
             _exitItem = new ToolStripMenuItem("Exit");
             _exitItem.Click += exitItem_Click;
 
-            _trayIcon = new NotifyIcon()
+            _trayIcon = new NotifyIcon
             {
                 Visible = true,
                 Icon = new Icon(Properties.Resources.Icon, SystemInformation.SmallIconSize),

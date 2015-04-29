@@ -138,7 +138,7 @@ namespace CoolRanch
             this.Controls.Add(this.ServerList);
             this.Icon = global::CoolRanch.Properties.Resources.Icon;
             this.Name = "BrowserForm";
-            this.Text = "Session Browser";
+            this.Text = "Lobby Browser";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.BrowserForm_FormClosing);
             this.Shown += new System.EventHandler(this.BrowserForm_Shown);
             this.ResumeLayout(false);

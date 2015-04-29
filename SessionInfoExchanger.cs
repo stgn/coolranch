@@ -257,6 +257,11 @@ namespace CoolRanch
             }
         }
 
+        bool IsHosting()
+        {
+            return _game.IsRunning && _game.IsHostingOnlineSession() && AllowJoins;
+        }
+
         void SendChallengeRequest(IPEndPoint peer)
         {
             var clientChallenge = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes());
@@ -278,7 +283,8 @@ namespace CoolRanch
 
         void SendAssociationRequest(IPEndPoint peer)
         {
-            if (!_game.IsRunning || !AllowJoins || !Announcing || !_game.IsHostingOnlineSession()) return;
+            if (!IsHosting() || !Announcing)
+                return;
 
             var hostChallenge = _challengeHmac.ComputeHash(peer.Address.GetAddressBytes());
             var response = hostChallenge.Take(4).ToArray();
@@ -298,7 +304,8 @@ namespace CoolRanch
 
         void SendInfoResponse(IPEndPoint peer, byte[] clientChallenge)
         {
-            if (!_game.IsRunning || !AllowJoins || !Announcing || !_game.IsHostingOnlineSession()) return;
+            if (!IsHosting() || !Announcing)
+                return;
 
             var serializer = MessagePackSerializer.Get<Dictionary<string, object>>();
             var info = _game.GetGameInfo();
@@ -324,7 +331,8 @@ namespace CoolRanch
 
         void SendJoinResponse(IPEndPoint peer, byte[] clientChallenge)
         {
-            if (!_game.IsRunning || !AllowJoins || !_game.IsHostingOnlineSession()) return;
+            if (!IsHosting())
+                return;
 
             var guids = _game.GetXnetParams();
 

@@ -159,7 +159,7 @@ namespace CoolRanch
 
         public void InjectJoin(IPEndPoint peer, Guid xnKid, Guid xnAddr)
         {
-            Console.WriteLine("Joining {0} {1} at {2}", peer, xnKid, xnAddr);
+            Console.WriteLine("Joining {0} {1} at {2}", xnKid, xnAddr, peer);
             var rawXnKid = xnKid.ToByteArray();
             var rawXnAddr = xnAddr.ToByteArray();
 
