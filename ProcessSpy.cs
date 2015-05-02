@@ -28,7 +28,7 @@ namespace CoolRanch
 
         public ProcessSpy(uint processId)
         {
-            this.ProcessId = processId;
+            ProcessId = processId;
             _handle = Kernel32.OpenProcess(0x38, false, processId);
         }
 

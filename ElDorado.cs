@@ -87,7 +87,7 @@ namespace CoolRanch
 
         public Guid[] GetXnetParams()
         {
-            return new Guid[] {
+            return new[] {
                 new Guid(_gameProcess.Read(0x2247b80, 16)),
                 new Guid(_gameProcess.Read(0x2247b90, 16))
             };
@@ -95,7 +95,7 @@ namespace CoolRanch
 
         public Dictionary<string, object> GetGameInfo()
         {
-            return new Dictionary<string, object>()
+            return new Dictionary<string, object>
             {
                 {"name", Encoding.Unicode.GetString(_gameProcess.Read(0x01863B20, 32)).Replace("\0","")},
                 {"map", Encoding.Unicode.GetString(_gameProcess.Read(0x01863ACA, 32)).Replace("\0","")},

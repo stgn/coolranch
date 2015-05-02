@@ -89,12 +89,12 @@ namespace CoolRanch
 
         private void CancelBrowseButton_Click(object sender, EventArgs e)
         {
-            this.Hide();
+            Hide();
         }
 
         private void BrowserForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            this.Hide();
+            Hide();
             e.Cancel = true;
         }
 
@@ -112,7 +112,7 @@ namespace CoolRanch
         public ServerListItem(Dictionary<string, object> info)
         {
             Text = info.ContainsKey("name") ? info["name"].ToString() : "<missing>";
-            SubItems.AddRange(new string[]
+            SubItems.AddRange(new[]
             {
                 info.ContainsKey("gametype") ? info["gametype"].ToString() : "<missing>", 
                 info.ContainsKey("map") ? info["map"].ToString() : "<missing>", 
